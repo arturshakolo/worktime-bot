@@ -1,0 +1,19 @@
+{
+  "name": "worktime-bots",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "start:employee": "node bots/employee-bot.js",
+    "start:hr": "node bots/hr-bot.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "google-spreadsheet": "^3.3.0",
+    "node-telegram-bot-api": "^0.61.0"
+  },
+  "main": "index.js"
+}
