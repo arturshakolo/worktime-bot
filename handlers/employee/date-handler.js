@@ -1,11 +1,6 @@
-// ============================================================
-// БЛОК: ОБРАБОТКА ДАТ
-// ============================================================
 import { COMMANDS } from '../../modules/constants.js';
 import { actionKeyboard, dateKeyboard, mainKeyboard } from '../../modules/keyboards.js';
-import { getLocalDate } from '../../utils/time-calculator.js';
 
-// ----- Состояния пользователей -----
 const userState = {};
 
 export function getUserState(userId) {
@@ -20,19 +15,14 @@ export function clearUserState(userId) {
   delete userState[userId];
 }
 
-// ----- Функция: обработка выбора даты -----
 export async function handleSelectDate(bot, chatId, userId, text) {
   let date;
-
   if (text === COMMANDS.TODAY) {
-    date = getLocalDate();
+    date = new Date().toISOString().split('T')[0];
   } else if (text === COMMANDS.YESTERDAY) {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    date = `${year}-${month}-${day}`;
+    date = d.toISOString().split('T')[0];
   } else if (text === COMMANDS.SELECT_DATE) {
     await bot.sendMessage(chatId, 'Введите дату в формате ДД.ММ.ГГГГ', mainKeyboard);
     setUserState(userId, { state: 'input_date' });
@@ -46,44 +36,43 @@ export async function handleSelectDate(bot, chatId, userId, text) {
     await bot.sendMessage(chatId, 'Возврат в меню', mainKeyboard);
     return;
   }
-
   setUserState(userId, { state: 'select_action', date });
   await bot.sendMessage(chatId, `Выбрана дата: ${date}\nЧто сделать?`, actionKeyboard);
 }
 
-// ----- Функция: парсинг введённой даты (с поддержкой команд) -----
 export async function parseInputDate(bot, chatId, userId, text) {
-  // Если пользователь ввёл не дату, а команду меню – обрабатываем как выбор даты
+  // Если пользователь ввёл команду меню, а не дату
   if (text === COMMANDS.TODAY || text === COMMANDS.YESTERDAY || text === COMMANDS.BACK || text === COMMANDS.SELECT_DATE) {
     await handleSelectDate(bot, chatId, userId, text);
     return;
   }
-
-  try {
-    const parts = text.split('.');
-    if (parts.length !== 3) throw new Error();
-    const [d, m, y] = parts.map(Number);
-    const dateObj = new Date(Date.UTC(y, m - 1, d));
-    if (isNaN(dateObj.getTime())) throw new Error();
-    const year = dateObj.getUTCFullYear();
-    const month = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(dateObj.getUTCDate()).padStart(2, '0');
-    const date = `${year}-${month}-${day}`;
-    setUserState(userId, { state: 'select_action', date });
-    await bot.sendMessage(chatId, `Выбрана дата: ${date}\nЧто сделать?`, actionKeyboard);
-  } catch {
+  // Парсим дату
+  const parts = text.split('.');
+  if (parts.length !== 3) {
     await bot.sendMessage(chatId, 'Неверный формат. Введите ДД.ММ.ГГГГ, "Сегодня" или "Назад"', dateKeyboard);
+    return;
   }
+  const [d, m, y] = parts.map(Number);
+  if (isNaN(d) || isNaN(m) || isNaN(y) || d < 1 || d > 31 || m < 1 || m > 12 || y < 2000 || y > 2100) {
+    await bot.sendMessage(chatId, 'Неверный формат. Введите ДД.ММ.ГГГГ, "Сегодня" или "Назад"', dateKeyboard);
+    return;
+  }
+  const dateObj = new Date(Date.UTC(y, m-1, d));
+  if (dateObj.getUTCDate() !== d || dateObj.getUTCMonth()+1 !== m || dateObj.getUTCFullYear() !== y) {
+    await bot.sendMessage(chatId, 'Неверная дата. Введите реальную дату.', dateKeyboard);
+    return;
+  }
+  const isoDate = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  setUserState(userId, { state: 'select_action', date: isoDate });
+  await bot.sendMessage(chatId, `Выбрана дата: ${isoDate}\nЧто сделать?`, actionKeyboard);
 }
 
-// ----- Функция: обработка выбора действия -----
 export async function handleSelectAction(bot, chatId, userId, text) {
   if (text === COMMANDS.BACK) {
     clearUserState(userId);
     await bot.sendMessage(chatId, 'Возврат в меню', mainKeyboard);
     return;
   }
-
   let action;
   if (text === COMMANDS.START_SHIFT) action = 'start';
   else if (text === COMMANDS.END_SHIFT) action = 'end';
@@ -94,11 +83,14 @@ export async function handleSelectAction(bot, chatId, userId, text) {
     await bot.sendMessage(chatId, 'Возврат в меню', mainKeyboard);
     return;
   }
-
   const state = getUserState(userId);
+  if (!state || !state.date) {
+    clearUserState(userId);
+    await bot.sendMessage(chatId, 'Ошибка: дата не выбрана. Начните заново.', mainKeyboard);
+    return;
+  }
   state.action = action;
   state.state = 'input_time';
   setUserState(userId, state);
-
   await bot.sendMessage(chatId, 'Введите время в формате HH:MM (или оставьте пустым для текущего)', mainKeyboard);
 }
