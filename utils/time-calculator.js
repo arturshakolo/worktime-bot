@@ -9,6 +9,28 @@ import { getSheet, getCellValue } from '../modules/google-sheets.js';
 import { SHEETS, HOLIDAY_COL, DAY_TYPE } from '../modules/constants.js';
 import { DEFAULTS } from '../config/index.js';
 
+// ============================================================
+// Глобальная переменная
+// ============================================================
+let holidaysCache = null;
+let holidaysCacheTime = 0;
+
+export async function isHoliday(dateString) {
+  if (!holidaysCache || (Date.now() - holidaysCacheTime) > 60000) { // обновлять раз в минуту
+    const sheet = await getSheet(SHEETS.HOLIDAYS);
+    const rows = await sheet.getRows();
+    holidaysCache = new Set();
+    for (const row of rows) {
+      let holidayDate = getCellValue(row, HOLIDAY_COL.DATE);
+      if (holidayDate) holidayDate = new Date(holidayDate).toISOString().split('T')[0];
+      if (holidayDate) holidaysCache.add(holidayDate);
+    }
+    holidaysCacheTime = Date.now();
+  }
+  const normalized = new Date(dateString).toISOString().split('T')[0];
+  return holidaysCache.has(normalized);
+}
+
 // ----- Функция: текущая локальная дата в формате YYYY-MM-DD -----
 export function getLocalDate() {
   const now = new Date();

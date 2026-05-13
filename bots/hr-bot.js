@@ -383,7 +383,8 @@ async function recalcAllShifts(chatId) {
   const logsSheet = await getSheet(SHEETS.LOGS);
   const rows = await logsSheet.getRows();
   let count = 0;
-  for (const row of rows) {
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
     const date = getCellValue(row, LOG_COL.DATE);
     const start = getCellValue(row, LOG_COL.START);
     const end = getCellValue(row, LOG_COL.END);
@@ -397,6 +398,10 @@ async function recalcAllShifts(chatId) {
       setCellValue(row, LOG_COL.COEFFICIENT, calc.coefficient);
       await row.save();
       count++;
+      // Пауза после каждых 10 обновлений
+      if (count % 10 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
   }
   await bot.sendMessage(chatId, `✅ Пересчитано ${count} смен.`);

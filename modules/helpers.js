@@ -5,13 +5,21 @@ import { getSheet, getCellValue } from './google-sheets.js';
 import { USER_COL, SHEETS } from './constants.js';
 import { DEFAULTS } from '../config/index.js';
 
+let employeeCache = new Map();
+const CACHE_TTL = 10000; // 10 секунд
+
 export async function getEmployee(userId) {
+  const cached = employeeCache.get(userId);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+    return cached.data;
+  }
+
   const sheet = await getSheet(SHEETS.USERS);
   const rows = await sheet.getRows();
   for (const row of rows) {
     const tid = getCellValue(row, USER_COL.TELEGRAM_ID);
     if (tid && String(tid).trim() === String(userId).trim()) {
-      return {
+      const employee = {
         name: getCellValue(row, USER_COL.NAME, 'Не указано'),
         department: getCellValue(row, USER_COL.DEPARTMENT, 'Не указано'),
         normHours: parseFloat(getCellValue(row, USER_COL.NORM_HOURS, DEFAULTS.NORM_HOURS)) || DEFAULTS.NORM_HOURS,
@@ -21,8 +29,11 @@ export async function getEmployee(userId) {
         role: getCellValue(row, USER_COL.ROLE, 'employee'),
         active: getCellValue(row, USER_COL.ACTIVE, 'TRUE') === 'TRUE'
       };
+      employeeCache.set(userId, { data: employee, timestamp: Date.now() });
+      return employee;
     }
   }
+  employeeCache.set(userId, { data: null, timestamp: Date.now() });
   return null;
 }
 
