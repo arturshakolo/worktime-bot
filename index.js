@@ -8,6 +8,6 @@ console.log('🚀 Запуск системы учёта рабочего вре
 
 // Импорт ботов (они запустятся автоматически при импорте)
 import './bots/employee-bot.js';
-// import './bots/hr-bot.js'; // Раскомментировать после создания HR-бота
+import './bots/hr-bot.js'; 
 
 console.log('✅ Все боты запущены');
