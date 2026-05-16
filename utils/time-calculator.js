@@ -3,11 +3,9 @@ import { getSheet, getCellValue } from '../modules/google-sheets.js';
 import { SHEETS, HOLIDAY_COL, DAY_TYPE } from '../modules/constants.js';
 import { DEFAULTS } from '../config/index.js';
 
-// ---------- Кэш для праздников ----------
 let holidaysCache = null;
 let holidaysCacheTime = 0;
 
-// ---------- Текущая локальная дата ----------
 export function getLocalDate() {
   const now = new Date();
   const year = now.getFullYear();
@@ -16,7 +14,6 @@ export function getLocalDate() {
   return `${year}-${month}-${day}`;
 }
 
-// ---------- Время в минуты ----------
 export function timeToMinutes(timeStr) {
   if (!timeStr) return 0;
   const parts = timeStr.split(':');
@@ -26,7 +23,6 @@ export function timeToMinutes(timeStr) {
   return h * 60 + m;
 }
 
-// ---------- Минуты в HH:MM ----------
 export function formatMinutes(minutes) {
   const sign = minutes < 0 ? '-' : '';
   const absMin = Math.abs(minutes);
@@ -35,7 +31,6 @@ export function formatMinutes(minutes) {
   return `${sign}${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 }
 
-// ---------- Длительность смены ----------
 export function getDurationMinutes(start, end) {
   let startMin = timeToMinutes(start);
   let endMin = timeToMinutes(end);
@@ -43,16 +38,13 @@ export function getDurationMinutes(start, end) {
   return endMin - startMin;
 }
 
-// ---------- Выходной ли день? ----------
 export function isWeekend(dateString) {
   const date = new Date(dateString);
   const day = date.getDay();
   return day === 6 || day === 0;
 }
 
-// ---------- Проверка праздника с кэшированием ----------
 export async function isHoliday(dateString) {
-  // Обновляем кэш не чаще раза в минуту
   if (!holidaysCache || (Date.now() - holidaysCacheTime) > 60000) {
     try {
       const sheet = await getSheet(SHEETS.HOLIDAYS);
@@ -61,7 +53,6 @@ export async function isHoliday(dateString) {
       for (const row of rows) {
         let holidayDate = getCellValue(row, HOLIDAY_COL.DATE);
         if (holidayDate) {
-          // Нормализуем дату в формат YYYY-MM-DD
           holidayDate = new Date(holidayDate).toISOString().split('T')[0];
           if (holidayDate) holidaysCache.add(holidayDate);
         }
@@ -69,14 +60,13 @@ export async function isHoliday(dateString) {
       holidaysCacheTime = Date.now();
     } catch (err) {
       console.error('Ошибка загрузки праздников:', err);
-      if (!holidaysCache) holidaysCache = new Set(); // пустой кэш, чтобы не падать
+      if (!holidaysCache) holidaysCache = new Set();
     }
   }
   const normalized = new Date(dateString).toISOString().split('T')[0];
   return holidaysCache.has(normalized);
 }
 
-// ---------- Расчёт смены ----------
 export async function calculateShift(start, end, dateString, userId) {
   const actualMinutes = getDurationMinutes(start, end);
   const employee = await getEmployee(userId);
@@ -108,4 +98,4 @@ export async function calculateShift(start, end, dateString, userId) {
     dayType,
     actualMinutes
   };
-}
+} 

@@ -1,12 +1,10 @@
-// ============================================================
-// БЛОК: ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (с getEmployeeNameById)
-// ============================================================
 import { getSheet, getCellValue } from './google-sheets.js';
 import { USER_COL, SHEETS } from './constants.js';
 import { DEFAULTS } from '../config/index.js';
 
+// Кэш для сотрудников (10 секунд)
 let employeeCache = new Map();
-const CACHE_TTL = 10000; // 10 секунд
+const CACHE_TTL = 10000;
 
 export async function getEmployee(userId) {
   const cached = employeeCache.get(userId);
