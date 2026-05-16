@@ -31,7 +31,7 @@ async function getMainKeyboard(userId) {
     [{ text: '⚙️ Изменить норму часов' }]
   ];
   if (isAdmin) {
-    buttons.push([{ text: '👑 Назначить HR' }, { text: '🔄 Пересчитать праздники' }]);
+    buttons.push([{ text: '👑 Назначить HR' }, { text: '🔄 Пересчитать смены за месяц' }]);
   }
   return { reply_markup: { keyboard: buttons, resize_keyboard: true } };
 }
@@ -399,8 +399,8 @@ async function recalcAllShifts(chatId) {
       await row.save();
       count++;
       // Пауза после каждых 10 строк
-      if (count % 10 === 0) {
-        await new Promise(resolve => setTimeout(resolve, 500));
+      if (count % 2 === 0) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
   }
