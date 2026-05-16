@@ -398,7 +398,7 @@ async function recalcAllShifts(chatId) {
       setCellValue(row, LOG_COL.COEFFICIENT, calc.coefficient);
       await row.save();
       count++;
-      // Пауза после каждых 10 строк
+      // Пауза после каждых 2 записей, чтобы уложиться в квоту
       if (count % 2 === 0) {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
